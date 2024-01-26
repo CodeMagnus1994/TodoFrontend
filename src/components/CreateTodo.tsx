@@ -1,7 +1,8 @@
-import React from 'react';
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
 
+// Assuming you have a Todo type defined
 interface Todo {
   rating: number;
   title: string;
@@ -11,13 +12,10 @@ interface Todo {
   };
 }
 
-function CreateTodo() {
-  const [rating, setRating] = useState<number>(0);
-  const [title, setTitle] = useState<string>("");
-  const [message, setMessage] = useState<string>("");
-  const [made_by, setMade_by] = useState<number>(0);
-
+function YourComponent() {
+  
   const api = 'http://localhost:8080/api/todo/createtodo';
+
 
   const postData = async (todo: Todo) => {
     const response = await fetch(api, {
@@ -27,80 +25,43 @@ function CreateTodo() {
         'Content-type': 'application/json; charset=UTF-8',
       },
     });
-
-    if (!response.ok) {
-      throw new Error('Failed to create todo');
-    }
-
     return response.json();
   };
 
-  const { mutate, isLoading, isError } = useMutation(postData, {
-    onSuccess: (successData) => {
-      console.log('Todo created:', successData);
-    },
-  });
+  const { mutate } = useMutation(postData);
 
-  const handleSubmit = () => {
+  const mutateHookSubmitHandler = (data) => {
     mutate({
-      rating,
-      title,
-      message,
+      rating: data.rating,
+      title: data.title,
+      message: data.message,
       made_by: {
-        id: made_by,
+        id: data.made_by,
       },
     });
   };
 
-  if (isLoading) {
-    return <p>Loading....</p>;
-  }
+  const { register, handleSubmit } = useForm({
+    defaultValues: {
+      rating: "",
+      title: "",
+      message: "",
+      made_by: 52,
+    },
+  });
 
-  if (isError) {
-    return <p>Something went wrong idiot!</p>;
-  }
+  const onSubmit = (data) => {
+    mutateHookSubmitHandler(data);
+  };
 
   return (
-    <div>
-      <div>
-        <label>Rating</label>
-        <input
-          value={rating}
-          onChange={(e) => setRating(Number(e.target.value))}
-          type="number"
-          placeholder="Enter rating"
-        />
-      </div>
-      <div>
-        <label>Title</label>
-        <input
-          onChange={(e) => setTitle(e.target.value)}
-          value={title}
-          type="text"
-          placeholder="Enter title"
-        />
-      </div>
-      <div>
-        <label>Message</label>
-        <input
-          onChange={(e) => setMessage(e.target.value)}
-          value={message}
-          type="text"
-          placeholder="Enter message"
-        />
-      </div>
-      <div>
-        <label>Made by</label>
-        <input
-          onChange={(e) => setMade_by(Number(e.target.value))}
-          value={made_by}
-          type="number"
-          placeholder="Enter made_by"
-        />
-      </div>
-      <button onClick={handleSubmit}>Submit</button>
-    </div>
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input {...register("rating", { required: "This is required" })} placeholder="rating" />
+      <input {...register("title", { required: "This is required" })} placeholder="title" />
+      <input {...register("message", { required: true, minLength: 3 })} placeholder="message" />
+      <input type="submit" />
+    </form>
   );
 }
 
-export default CreateTodo;
+export default YourComponent;
